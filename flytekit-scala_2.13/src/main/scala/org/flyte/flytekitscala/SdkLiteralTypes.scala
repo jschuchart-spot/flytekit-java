@@ -25,7 +25,7 @@ import org.flyte.flytekit.{
 import java.time.{Duration, Instant}
 import scala.collection.JavaConverters._
 import scala.reflect.api.{Mirror, TypeCreator, Universe}
-import scala.reflect.runtime.universe
+import scala.reflect.runtime.{currentMirror, universe}
 import scala.reflect.{ClassTag, classTag}
 import scala.reflect.runtime.universe.{
   NoPrefix,
@@ -36,7 +36,6 @@ import scala.reflect.runtime.universe.{
   termNames,
   typeOf
 }
-import scala.tools.nsc.doc.model.Trait
 
 object SdkLiteralTypes {
   val __TYPE = "__type"
@@ -72,90 +71,29 @@ object SdkLiteralTypes {
         blobs(BlobType.DEFAULT).asInstanceOf[SdkLiteralType[T]]
       case t if t =:= typeOf[Binary] =>
         binary().asInstanceOf[SdkLiteralType[T]]
-      case t if t <:< typeOf[Product] && !(t =:= typeOf[Option[_]]) =>
+      case t if t <:< typeOf[Product] =>
         generics().asInstanceOf[SdkLiteralType[T]]
 
-      case t if t =:= typeOf[List[Long]] =>
-        collections(integers()).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[Double]] =>
-        collections(floats()).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[String]] =>
-        collections(strings()).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[Boolean]] =>
-        collections(booleans()).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[Instant]] =>
-        collections(datetimes()).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[Duration]] =>
-        collections(durations()).asInstanceOf[SdkLiteralType[T]]
-
-      case t if t =:= typeOf[Map[String, Long]] =>
-        maps(integers()).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, Double]] =>
-        maps(floats()).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, String]] =>
-        maps(strings()).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, Boolean]] =>
-        maps(booleans()).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, Instant]] =>
-        maps(datetimes()).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, Duration]] =>
-        maps(durations()).asInstanceOf[SdkLiteralType[T]]
-
-      case t if t =:= typeOf[List[List[Long]]] =>
-        collections(collections(integers())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[List[Double]]] =>
-        collections(collections(floats())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[List[String]]] =>
-        collections(collections(strings())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[List[Boolean]]] =>
-        collections(collections(booleans())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[List[Instant]]] =>
-        collections(collections(datetimes())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[List[Duration]]] =>
-        collections(collections(durations())).asInstanceOf[SdkLiteralType[T]]
-
-      case t if t =:= typeOf[List[Map[String, Long]]] =>
-        collections(maps(integers())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[Map[String, Double]]] =>
-        collections(maps(floats())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[Map[String, String]]] =>
-        collections(maps(strings())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[Map[String, Boolean]]] =>
-        collections(maps(booleans())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[Map[String, Instant]]] =>
-        collections(maps(datetimes())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[List[Map[String, Duration]]] =>
-        collections(maps(durations())).asInstanceOf[SdkLiteralType[T]]
-
-      case t if t =:= typeOf[Map[String, Map[String, Long]]] =>
-        maps(maps(integers())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, Map[String, Double]]] =>
-        maps(maps(floats())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, Map[String, String]]] =>
-        maps(maps(strings())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, Map[String, Boolean]]] =>
-        maps(maps(booleans())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, Map[String, Instant]]] =>
-        maps(maps(datetimes())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, Map[String, Duration]]] =>
-        maps(maps(durations())).asInstanceOf[SdkLiteralType[T]]
-
-      case t if t =:= typeOf[Map[String, List[Long]]] =>
-        maps(collections(integers())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, List[Double]]] =>
-        maps(collections(floats())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, List[String]]] =>
-        maps(collections(strings())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, List[Boolean]]] =>
-        maps(collections(booleans())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, List[Instant]]] =>
-        maps(collections(datetimes())).asInstanceOf[SdkLiteralType[T]]
-      case t if t =:= typeOf[Map[String, List[Duration]]] =>
-        maps(collections(durations())).asInstanceOf[SdkLiteralType[T]]
+      case t if t <:< typeOf[List[Any]] =>
+        collections(of()(createTypeTag(t.typeArgs.head)))
+          .asInstanceOf[SdkLiteralType[T]]
+      case t if t <:< typeOf[Map[String, Any]] =>
+        maps(of()(createTypeTag(t.typeArgs.last)))
+          .asInstanceOf[SdkLiteralType[T]]
 
       case _ =>
         throw new IllegalArgumentException(s"Unsupported type: ${typeOf[T]}")
     }
+  }
+
+  private def createTypeTag(t: Type): TypeTag[_] = {
+    TypeTag(
+      currentMirror,
+      new TypeCreator {
+        def apply[U <: Universe with Singleton](m: Mirror[U]): U#Type =
+          t.asInstanceOf[U#Type]
+      }
+    )
   }
 
   /** Returns a [[SdkLiteralType]] for flyte integers.
@@ -392,6 +330,12 @@ object SdkLiteralTypes {
       }
 
       val clazz = typeOf[S].typeSymbol.asClass
+      if (clazz.name.toString == "Option")
+        return map
+          .get("value")
+          .map(valueToParamValue(_, typeOf[S].typeArgs.head))
+          .asInstanceOf[S]
+
       val classMirror = mirror.reflectClass(clazz)
       val constructor = typeOf[S].decl(termNames.CONSTRUCTOR).asMethod
       val constructorMirror = classMirror.reflectConstructor(constructor)

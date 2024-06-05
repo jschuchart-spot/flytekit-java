@@ -152,7 +152,7 @@ object SdkBindingDataConverters {
             )
           case SimpleType.STRUCT =>
             throw new UnsupportedOperationException(
-              "Converting Scala case class instance to Java object is not supported"
+              "Converting Java object to Scala case class instance is not supported"
             )
           case SimpleType.BOOLEAN =>
             TypeCastingResult(
@@ -248,7 +248,7 @@ object SdkBindingDataConverters {
             )
           case SimpleType.STRUCT =>
             throw new UnsupportedOperationException(
-              "Converting Java object to Scala case class instance is not supported"
+              "Converting Scala case class instance to Java object is not supported"
             )
           case SimpleType.BOOLEAN =>
             TypeCastingResult(
